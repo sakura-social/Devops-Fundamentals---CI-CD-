@@ -1,0 +1,41 @@
+---
+- name: Deploy PHP 8.1 App with Nginx
+  hosts: web_servers
+  become: yes
+  vars:
+    app_path: "/var/www/my-app"
+    server_domain: "example.com" # Change this to your IP or domain
+
+  tasks:
+    - name: Install Nginx and PHP 8.1
+      apt:
+        name: [nginx, php8.1-fpm, php8.1-cli, git]
+        state: present
+        update_cache: yes
+
+    - name: Deploy Nginx Configuration from Template
+      template:
+        src: templates/nginx.conf
+        dest: "/etc/nginx/sites-available/my-app"
+      notify: restart nginx
+
+    - name: Enable Nginx site
+      file:
+        src: "/etc/nginx/sites-available/my-app"
+        dest: "/etc/nginx/sites-enabled/my-app"
+        state: link
+      notify: restart nginx
+
+    - name: Remove default Nginx config
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: restart nginx
+
+    # ... Your existing Git pull and Permission tasks go here ...
+
+  handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
