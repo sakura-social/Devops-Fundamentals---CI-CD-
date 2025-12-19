@@ -1,0 +1,8 @@
+stage('Deploy') {
+    steps {
+        // 'github-ssh-key' is the ID of the credential you saved in Jenkins
+        sshagent(['github-ssh-key']) {
+            sh 'ansible-playbook -i deploy_github.ini deploy_nginx.yml'
+        }
+    }
+}
