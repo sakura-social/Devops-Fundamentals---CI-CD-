@@ -1,0 +1,41 @@
+---
+- name: Deploy PHP 8.1 App with Nginx and GitHub
+  hosts: web_servers
+  become: yes
+  vars:
+    app_path: "/var/www/my-app"
+    repo_url: "git@github.com:USERNAME/REPO_NAME.git" # Use SSH URL
+    repo_branch: "main"
+
+  tasks:
+    # 1. Install Git
+    - name: Ensure Git is installed
+      apt:
+        name: git
+        state: present
+
+    # 2. Setup Directory Permissions
+    - name: Create app directory and set ownership
+      file:
+        path: "{{ app_path }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    # 3. Clone/Pull Code
+    - name: Clone the repository from GitHub
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_path }}"
+        version: "{{ repo_branch }}"
+        accept_hostkey: yes  # Automatically add github.com to known_hosts
+        force: yes           # Overwrites local changes to match the repo
+      become_user: www-data  # Pull code as the web user to avoid permission issues
+
+    # 4. (Optional) Run Composer
+    - name: Install PHP Dependencies
+      command: composer install --no-dev --optimize-autoloader
+      args:
+        chdir: "{{ app_path }}"
+      become_user: www-data
